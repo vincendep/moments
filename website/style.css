@@ -1,0 +1,94 @@
+/* Moments website. Colours and type follow the app's design system, the Family Album (Views/Theme.swift,
+   Assets.xcassets): --rose is the darkroom red accent. Fraunces is self-hosted (fonts/, SIL OFL) so the site contacts no other server. */
+@font-face {
+  font-family: "Fraunces";
+  src: url("fonts/Fraunces.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  color-scheme: light dark;
+  --canvas: #f3ecdf;
+  --card: #fffbf3;
+  --hairline: #e4dacb;
+  --ink: #2b2420;
+  --ink-secondary: #6e625a;
+  --rose: #c2412d;
+  --rose-fill: #c2412d;
+  --on-rose: #fffbf3;
+  --marigold: #b07d0f;
+  --font-serif: "Fraunces", ui-serif, "New York", Georgia, "Times New Roman", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, system-ui, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #1b1714;
+    --card: #2a241f;
+    --hairline: #3a322b;
+    --ink: #f3ecdf;
+    --ink-secondary: #b5a99d;
+    --rose: #e8664f;
+    --rose-fill: #c94a35;
+    --marigold: #e8b23c;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font: 17px/1.47 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+a { color: var(--rose); }
+a:focus-visible { outline: 3px solid var(--rose); outline-offset: 2px; border-radius: 4px; }
+.page { max-width: 600px; margin: 0 auto; padding: 0 16px 48px; }
+
+/* The serif is for headings only, at regular weight, as in the app. */
+h1, h2 { font-family: var(--font-serif); font-weight: 400; font-variation-settings: "SOFT" 100; }
+h1 { font-size: 56px; line-height: 1; letter-spacing: -0.01em; margin: 24px 0 8px; }
+h2 { font-size: 22px; line-height: 28px; margin: 40px 16px 8px; }
+h3 { font-size: 17px; line-height: 22px; font-weight: 600; margin: 0 0 2px; }
+.tagline { margin: 0; font-size: 20px; line-height: 26px; color: var(--ink-secondary); }
+.lede { margin: 32px 0 24px; }
+
+/* Hero art: the design system's cover, a rose slab and the day scrubber on an ink field. */
+.art { display: block; width: 100%; height: auto; margin-top: 16px; }
+.art .rose { fill: var(--rose); }
+.art .ink { fill: var(--ink); }
+.art .mari { fill: var(--marigold); }
+.art .cut { fill: var(--canvas); }
+.art .ring { stroke: var(--canvas); stroke-width: 2px; }
+
+/* Inset-grouped cards, like the app's lists. */
+.card { background: var(--card); border-radius: 12px; overflow: hidden; }
+.row { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; }
+.row + .row::before { content: ""; position: absolute; top: 0; right: 0; left: 16px; border-top: 0.5px solid var(--hairline); }
+.has-icon + .has-icon::before { left: 52px; }
+.row p { margin: 0; }
+.icon { flex: none; width: 24px; height: 24px; margin-top: -1px; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon.flag { fill: var(--marigold); stroke: var(--marigold); }
+.footnote { margin: 8px 16px 0; font-size: 15px; line-height: 20px; color: var(--ink-secondary); }
+
+.tip { padding: 16px; }
+.tip p { margin: 0 0 16px; }
+.button {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--rose-fill);
+  color: var(--on-rose);
+  font-weight: 600;
+  text-decoration: none;
+}
+.button:hover { filter: brightness(1.08); }
+
+/* Policy text sits on the canvas, aligned with the card text. */
+.prose > p { margin: 0 16px 12px; }
+.summary { padding: 16px; margin-top: 32px; }
+.summary p { margin: 0; }
+.back { display: inline-block; margin-top: 24px; text-decoration: none; }
+
+footer { margin-top: 48px; text-align: center; font-size: 15px; color: var(--ink-secondary); }
