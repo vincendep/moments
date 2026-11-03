@@ -25,6 +25,9 @@ targets:
         # Set from MARKETING_VERSION and CURRENT_PROJECT_VERSION below.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        # Export compliance: only the encryption built into iOS (HTTPS, CloudKit), which is exempt,
+        # so App Store Connect doesn't ask on every upload. Revisit if the app adds its own crypto.
+        ITSAppUsesNonExemptEncryption: false
         # Bundled fonts (Moments/Fonts, SIL Open Font License); see AlbumFont in Views/Theme.swift.
         UIAppFonts: [Fraunces.ttf, Fraunces-Italic.ttf, Caveat.ttf, VT323-Regular.ttf]
         # Launch screen: the thread from the icon, centred on album paper (both follow dark mode).
