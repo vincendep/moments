@@ -1,11 +1,12 @@
 import SwiftUI
 import SwiftData
+import SafariServices
 
 /// Shows the current timeline full screen; the title menu switches between timelines.
 struct RootView: View {
-    /// The app's website, where people can leave a tip; the title menu links to it once set.
+    /// The app's website, where people can leave a tip; the title menu's "About Moments" opens it in-app.
     /// Keep the in-app label neutral: outside the US, the App Store forbids pointing to payments outside in-app purchase.
-    static let website: URL? = nil
+    static let website = URL(string: "https://vincendep.github.io/moments/")
     /// The first-launch timeline's name, in the user's language; an untouched one is recognised by it.
     private static let defaultTimelineName = String(localized: "My Timeline")
 
@@ -21,6 +22,7 @@ struct RootView: View {
     @State private var creating = false
     /// The timeline whose settings sheet is open (held so deleting it doesn't swap the sheet's content).
     @State private var editing: Timeline?
+    @State private var showingAbout = false
 
     /// The last used timeline, falling back to the first one (e.g. after it was deleted).
     private var current: Timeline? {
@@ -64,6 +66,9 @@ struct RootView: View {
             TimelineEditorView(timeline: nil) { lastTimelineID = $0.uuid.uuidString }
         }
         .sheet(item: $editing) { TimelineEditorView(timeline: $0) }
+        .sheet(isPresented: $showingAbout) {
+            if let website = Self.website { SafariView(url: website).ignoresSafeArea() }
+        }
         .onAppear {
             // Menus and other UIKit-presented UI take the window's tint, which SwiftUI's doesn't set.
             for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
@@ -103,10 +108,26 @@ struct RootView: View {
                                               set: { lastTimelineID = $0 })) {
             ForEach(timelines) { Text($0.name).tag($0.uuid.uuidString) }
         }
-        Divider()
-        Button("New Timeline…", systemImage: "plus") { creating = true }
-        if let website = Self.website {
-            Link(destination: website) { Label("Moments Website", systemImage: "safari") }
+        .pickerStyle(.inline)
+        Section {
+            Button("New Timeline…", systemImage: "plus") { creating = true }
+            if Self.website != nil {
+                Button("About Moments", systemImage: "info.circle") { showingAbout = true }
+            }
         }
     }
+}
+
+/// The website in an in-app Safari view, in the album's colours.
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let safari = SFSafariViewController(url: url)
+        safari.preferredBarTintColor = UIColor(named: "Paper")
+        safari.preferredControlTintColor = UIColor(named: "AccentColor")
+        return safari
+    }
+
+    func updateUIViewController(_ safari: SFSafariViewController, context: Context) {}
 }

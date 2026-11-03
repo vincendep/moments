@@ -1,6 +1,17 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "About Moments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informazioni su Moments"
+          }
+        }
+      }
+    },
     "%@ %@" : {
       "comment" : "Month header: the month and year, already in the user's language.",
       "shouldTranslate" : false
@@ -310,17 +321,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Traguardi"
-          }
-        }
-      }
-    },
-    "Moments Website" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sito web di Moments"
           }
         }
       }
