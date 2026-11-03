@@ -6,7 +6,6 @@ import CoreLocation
 struct TimelineView: View {
     let timeline: Timeline
     @Environment(\.modelContext) private var ctx
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var sheet: Sheet?
     /// What the add sheet picked; opened once that sheet has gone.
@@ -145,12 +144,6 @@ struct TimelineView: View {
             }
         }
         .navigationTitle(timeline.name)
-        // A solid paper bar: on iOS 26 the bar is otherwise see-through glass, and with prints scrolling
-        // under it the system recolours the title for contrast, losing the ink title against the paper.
-        .toolbarBackground(Color.paper, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        // The status bar follows the bar's scheme, not the prints under it (which turned it white).
-        .toolbarColorScheme(colorScheme, for: .navigationBar)
         .navigationDestination(for: Entry.self) { EntryDetailView(entry: $0) }
         .safeAreaInset(edge: .bottom) { shutter }
         .photosPicker(isPresented: $showPicker, selection: $pickerItems,
