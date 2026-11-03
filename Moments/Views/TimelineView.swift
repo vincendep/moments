@@ -18,6 +18,8 @@ struct TimelineView: View {
     @State private var hideScrubber: Task<Void, Never>?
     /// Shows only the milestones, each with the time since the first one.
     @State private var milestonesOnly = false
+    /// Set once the list has opened at the top, so returning from an entry keeps the scroll position.
+    @State private var openedAtTop = false
 
     enum Sheet: Identifiable { case add, camera, note, voice; var id: Self { self } }
 
@@ -119,8 +121,16 @@ struct TimelineView: View {
                 .padding(.vertical, 8)
             }
         }
-        .onAppear { scrollToTop(proxy, animated: false) }
-        .onChange(of: timeline.entries?.count) { scrollToTop(proxy, animated: true) }
+        // onAppear also runs when coming back from an entry: only the first one opens at the top.
+        .onAppear {
+            guard !openedAtTop else { return }
+            openedAtTop = true
+            scrollToTop(proxy, animated: false)
+        }
+        // A new entry lands at the top; deleting one keeps the place.
+        .onChange(of: timeline.entries?.count ?? 0) { old, new in
+            if new > old { scrollToTop(proxy, animated: true) }
+        }
         .onChange(of: milestonesOnly) { scrollToTop(proxy, animated: false) }
         // Unmarking the last milestone hides the tabs, so leave the then-empty milestones view.
         .onChange(of: timeline.milestones.isEmpty) { _, none in if none { milestonesOnly = false } }
