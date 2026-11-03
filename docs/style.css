@@ -92,3 +92,4 @@ h3 { font-size: 17px; line-height: 22px; font-weight: 600; margin: 0 0 2px; }
 .back { display: inline-block; margin-top: 24px; text-decoration: none; }
 
 footer { margin-top: 48px; text-align: center; font-size: 15px; color: var(--ink-secondary); }
+footer .credit { margin: 8px 0 0; }
