@@ -9,7 +9,7 @@ targets:
     type: application
     platform: iOS
     sources: [Moments]
-    # iCloud (CloudKit) sync of the SwiftData store. Needs a paid team: set DEVELOPMENT_TEAM below
+    # iCloud (CloudKit) sync of the SwiftData store. Needs a paid team (DEVELOPMENT_TEAM below)
     # and a bundle ID you own; the container is derived from it.
     entitlements:
       path: Moments/Moments.entitlements
@@ -36,7 +36,8 @@ targets:
           UIImageName: LaunchMark
     settings:
       base:
-        # DEVELOPMENT_TEAM: YOUR_TEAM_ID
+        # The personal paid team (Vincenzo De Petris), needed for iCloud.
+        DEVELOPMENT_TEAM: 6L2D8L726C
         CODE_SIGN_STYLE: Automatic
         # The version people see on the App Store; raise the build number for every upload.
         MARKETING_VERSION: "1.0"
