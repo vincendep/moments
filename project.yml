@@ -22,6 +22,9 @@ targets:
       properties:
         # CloudKit pushes changes from other devices in the background.
         UIBackgroundModes: [remote-notification]
+        # Set from MARKETING_VERSION and CURRENT_PROJECT_VERSION below.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         # Bundled fonts (Moments/Fonts, SIL Open Font License); see AlbumFont in Views/Theme.swift.
         UIAppFonts: [Fraunces.ttf, Fraunces-Italic.ttf, Caveat.ttf, VT323-Regular.ttf]
         # Launch screen: the thread from the icon, centred on album paper (both follow dark mode).
@@ -32,6 +35,9 @@ targets:
       base:
         # DEVELOPMENT_TEAM: YOUR_TEAM_ID
         CODE_SIGN_STYLE: Automatic
+        # The version people see on the App Store; raise the build number for every upload.
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         PRODUCT_BUNDLE_IDENTIFIER: it.vincendep.moments
         TARGETED_DEVICE_FAMILY: 1

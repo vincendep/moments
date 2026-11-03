@@ -325,6 +325,17 @@
         }
       }
     },
+    "Moments %@ (%@)" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moments %@ (%@)"
+          }
+        }
+      }
+    },
     "More ways to add" : {
       "extractionState" : "manual",
       "localizations" : {

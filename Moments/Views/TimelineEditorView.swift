@@ -12,6 +12,14 @@ struct TimelineEditorView: View {
     @State private var addImports = true
     @State private var confirmDelete = false
 
+    /// "Moments 1.0 (1)": MARKETING_VERSION and CURRENT_PROJECT_VERSION from project.yml.
+    private static let version: String = {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? ""
+        let build = info?["CFBundleVersion"] as? String ?? ""
+        return String(localized: "Moments \(short) (\(build))")
+    }()
+
     var body: some View {
         NavigationStack {
             PaperForm {
@@ -38,6 +46,10 @@ struct TimelineEditorView: View {
                             } message: {
                                 Text("Its entries and voice memos will be deleted. Photos and videos stay in your Photos library.")
                             }
+                    } footer: {
+                        Text(Self.version)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 24)
                     }
                 }
             }
