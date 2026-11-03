@@ -380,17 +380,6 @@
         }
       }
     },
-    "New Timeline" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nuova timeline"
-          }
-        }
-      }
-    },
     "New Timeline…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -729,6 +718,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Memo vocale"
+          }
+        }
+      }
+    },
+    "timelineEditor.newTitle" : {
+      "comment" : "Title of the screen that creates a timeline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Timeline"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuova timeline"
           }
         }
       }

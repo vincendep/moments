@@ -53,7 +53,7 @@ struct TimelineEditorView: View {
                     }
                 }
             }
-            .navigationTitle(timeline?.name ?? String(localized: "New Timeline"))
+            .navigationTitle(timeline?.name ?? String(localized: "timelineEditor.newTitle", defaultValue: "New Timeline"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
