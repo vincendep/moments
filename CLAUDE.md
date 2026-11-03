@@ -18,7 +18,7 @@ xcodegen
 xcodebuild -project Moments.xcodeproj -scheme Moments -destination 'generic/platform=iOS Simulator' build
 ```
 
-The camera needs a real device; on the simulator `CameraView` falls back to the photo library. For location, set one with `xcrun simctl location <device> set <lat>,<lon>`; `xcrun simctl privacy <device> reset location com.example.moments` brings the consent prompt back.
+The camera needs a real device; on the simulator `CameraView` falls back to the photo library. For location, set one with `xcrun simctl location <device> set <lat>,<lon>`; `xcrun simctl privacy <device> reset location it.vincendep.moments` brings the consent prompt back.
 
 iCloud sync needs a paid team: set `DEVELOPMENT_TEAM` and a bundle ID you own in `project.yml` (the CloudKit container is `iCloud.$(PRODUCT_BUNDLE_IDENTIFIER)`). Simulator builds work without a team; without an iCloud account the store just stays local (the log shows `CKAccountStatusNoAccount`).
 
