@@ -6,7 +6,7 @@ A private iOS timeline manager: keep any number of timelines of photos, videos, 
 1. `brew install xcodegen`
 2. From the repo root, run `xcodegen`
 3. For a device: set `DEVELOPMENT_TEAM` and your own bundle ID in `project.yml` (iCloud sync needs a paid Apple Developer Program team), run `xcodegen` again, then open `Moments.xcodeproj` and run (the camera needs real hardware).
-4. Website: `website/` is the app's site (plain HTML, no build): a home page with support and the tip link, and `privacy.html`. Replace `support@example.com` and the Ko-fi address, publish the folder (for example with GitHub Pages), then set `RootView.website` to its address to show a "Moments Website" link in the title menu. In App Store Connect, use the site as the support URL and `privacy.html` as the privacy policy URL.
+4. Website: `docs/` is the app's site (plain HTML, no build): a home page with support and the tip link, and `privacy.html`. Replace `support@example.com` and the Ko-fi address, publish the folder (GitHub Pages can serve `docs/` from `main`), then set `RootView.website` to its address to show a "Moments Website" link in the title menu. In App Store Connect, use the site as the support URL and `privacy.html` as the privacy policy URL.
 
 ## Design
 - Timelines, entries and voice memos sync through the user's private iCloud (SwiftData + CloudKit), so changing phone loses nothing. No account needed.
