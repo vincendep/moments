@@ -12,94 +12,19 @@ struct TimelineView: View {
     @State private var picked: AddMomentSheet.Choice?
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showPicker = false
-    @State private var scrubberVisible = false
-    @State private var scrubbing = false
-    @State private var hideScrubber: Task<Void, Never>?
     /// Shows only the milestones, each with the time since the first one.
     @State private var milestonesOnly = false
-    /// Set once the list has opened at the top, so returning from an entry keeps the scroll position.
-    @State private var openedAtTop = false
+    /// The Milestones list is created on its first visit, so its thread draws in when first seen.
+    @State private var milestonesVisited = false
 
     enum Sheet: Identifiable { case add, camera, note, voice; var id: Self { self } }
 
-    /// All entries, newest first. (The milestones view is oldest first: `timeline.milestones`.)
-    private var ordered: [Entry] { timeline.sortedEntries }
-
-    /// Consecutive entries grouped by the start of their month, keeping `ordered`'s order.
-    private var grouped: [(Date, [Entry])] {
-        var groups: [(Date, [Entry])] = []
-        for e in ordered {
-            let month = Calendar.current.dateInterval(of: .month, for: e.date)?.start ?? e.date
-            if groups.last?.0 == month { groups[groups.count - 1].1.append(e) } else { groups.append((month, [e])) }
-        }
-        return groups
-    }
-
-    /// One item per day with entries, in display order, pointing at that day's first row.
-    private var scrubberDays: [ScrubberDay] {
-        var days: [ScrubberDay] = []
-        for e in ordered {
-            let day = Calendar.current.startOfDay(for: e.date)
-            if days.last?.date != day {
-                days.append(ScrubberDay(date: day, entryID: e.id, isMilestone: e.isMilestone))
-            } else if e.isMilestone {
-                days[days.count - 1].isMilestone = true
-            }
-        }
-        return days
-    }
-
     var body: some View {
-        ScrollViewReader { proxy in
-        List {
-            if milestonesOnly, let first = timeline.milestones.first {
-                let items = timeline.milestones
-                Section {
-                    // Each milestone after the first is preceded by a row with the time since the previous one,
-                    // written in the margin beside the thread.
-                    ForEach(Array(items.enumerated()), id: \.element.id) { i, e in
-                        if i > 0 {
-                            HStack(spacing: 12) {
-                                MilestoneRail(style: .interval, index: 2 * i - 1)
-                                Image("icon.hourglass").foregroundStyle(.pencil).accessibilityHidden(true)
-                                Text(e.interval(since: items[i - 1]))
-                                    .font(.margin).foregroundStyle(.pencil)
-                                    .padding(.vertical, 8)
-                                Spacer()
-                            }
-                            .milestoneRailRow()
-                        }
-                        row(e, elapsed: e.sinceFirstMilestone(first),
-                            rail: .milestone(isFirst: i == 0, isLast: i == items.count - 1), index: 2 * i)
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) { ctx.delete(e) } label: {
-                                    Label { Text("Delete") } icon: { Image("icon.delete") }
-                                }
-                            }
-                            .milestoneRailRow()
-                    }
-                }
-            } else {
-                ForEach(grouped, id: \.0) { month, items in
-                    Section {
-                        // A row rather than a section header: plain lists pin headers on a dark band.
-                        MonthHeader(month: month)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 24, leading: 20, bottom: 0, trailing: 20))
-                        ForEach(items) { row($0) }
-                            .onDelete { idx in
-                                idx.forEach { ctx.delete(items[$0]) }
-                            }
-                    }
-                    .listSectionSeparator(.hidden)
-                }
-            }
+        // Two lists kept alive side by side, so each tab keeps its own scroll position.
+        ZStack {
+            EntriesList(timeline: timeline).shown(!milestonesOnly)
+            if milestonesOnly || milestonesVisited { MilestonesList(timeline: timeline).shown(milestonesOnly) }
         }
-        // Plain: grouped styles clip each section to a rounded card, cutting off the prints' shadows and tilt.
-        .listStyle(.plain)
-        .foregroundStyle(Color.ink)
-        .paperBackground()
         .safeAreaInset(edge: .top) {
             if !timeline.milestones.isEmpty {
                 AlbumTabs(milestonesOnly: $milestonesOnly)
@@ -107,32 +32,12 @@ struct TimelineView: View {
                     .background(Color.paper)
             }
         }
-        // iOS 17 has no scroll-offset callback for List; a simultaneous drag doesn't block scrolling.
-        .simultaneousGesture(DragGesture(minimumDistance: 10).onChanged { _ in showScrubber() })
-        .overlay(alignment: .trailing) {
-            if !milestonesOnly, scrubberDays.count >= 2 {
-                DayScrubber(days: scrubberDays, isVisible: scrubberVisible) { active in
-                    scrubbing = active
-                    showScrubber()
-                } onSelect: { day in
-                    proxy.scrollTo(day.entryID, anchor: .top)
-                }
-                .padding(.vertical, 8)
-            }
-        }
-        // onAppear also runs when coming back from an entry: only the first one opens at the top.
-        .onAppear {
-            guard !openedAtTop else { return }
-            openedAtTop = true
-            scrollToTop(proxy, animated: false)
-        }
-        // A new entry lands at the top; deleting one keeps the place.
-        .onChange(of: timeline.entries?.count ?? 0) { old, new in
-            if new > old { scrollToTop(proxy, animated: true) }
-        }
-        .onChange(of: milestonesOnly) { scrollToTop(proxy, animated: false) }
+        .onChange(of: milestonesOnly) { _, on in if on { milestonesVisited = true } }
         // Unmarking the last milestone hides the tabs, so leave the then-empty milestones view.
-        .onChange(of: timeline.milestones.isEmpty) { _, none in if none { milestonesOnly = false } }
+        .onChange(of: timeline.milestones.isEmpty) { _, none in
+            guard none else { return }
+            milestonesOnly = false
+            milestonesVisited = false
         }
         .overlay {
             if timeline.entries?.isEmpty ?? true {
@@ -167,62 +72,6 @@ struct TimelineView: View {
                 .ignoresSafeArea()
             case .note: NoteEditorView(timeline: timeline)
             case .voice: VoiceRecorderView(timeline: timeline)
-            }
-        }
-    }
-
-    /// A list row on the album page (no card, separator or chevron), with the leading swipe
-    /// that marks or unmarks a milestone.
-    private func row(_ e: Entry, elapsed: String? = nil, rail: MilestoneRail.Style? = nil, index: Int = 0) -> some View {
-        HStack(spacing: 12) {
-            if let rail { MilestoneRail(style: rail, index: index) }
-            // Rail rows have no vertical insets (so the line joins up); the padding restores the height.
-            ZStack {
-                // Hidden link: keeps the row tappable without the disclosure chevron.
-                NavigationLink(value: e) { EmptyView() }.opacity(0)
-                EntryRow(entry: e, elapsed: elapsed)
-            }
-            .padding(.vertical, rail == nil ? 0 : 10)
-        }
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .listRowInsets(rail == nil ? EdgeInsets(top: 14, leading: 20, bottom: 14, trailing: 20)
-                                   : EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-        .sensoryFeedback(.impact(weight: .light), trigger: e.isMilestone)
-        .swipeActions(edge: .leading) {
-            Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) { e.isMilestone.toggle() }
-                e.modifiedAt = .now
-            } label: {
-                Label { Text(e.isMilestone ? "Not a Milestone" : "Milestone") }
-                    icon: { Image(e.isMilestone ? "icon.ribbon" : "icon.ribbon.fill") }
-            }
-            .tint(.darkroom)
-        }
-    }
-
-    /// Shows the day scrubber and hides it again 1.5 s after the last scroll or drag.
-    private func showScrubber() {
-        scrubberVisible = true
-        hideScrubber?.cancel()
-        hideScrubber = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.5))
-            guard !Task.isCancelled, !scrubbing else { return }
-            scrubberVisible = false
-        }
-    }
-
-    /// Scrolls to the first row: the newest entry, or in the milestones view the first milestone.
-    private func scrollToTop(_ proxy: ScrollViewProxy, animated: Bool) {
-        guard let first = milestonesOnly ? timeline.milestones.first : timeline.sortedEntries.first else { return }
-        // Centering the first row clamps to the list's top and keeps its month header visible
-        // (a .top anchor would tuck the header under the bar).
-        // Deferred so the list has laid out its rows before scrolling.
-        DispatchQueue.main.async {
-            if animated {
-                withAnimation { proxy.scrollTo(first.id, anchor: .center) }
-            } else {
-                proxy.scrollTo(first.id, anchor: .center)
             }
         }
     }
@@ -317,5 +166,14 @@ struct TimelineView: View {
                 try? await PhotoService.add(assetIDs: ids, to: album)
             }
         }
+    }
+}
+
+private extension View {
+    /// Shows one of the tab lists, or keeps it hidden (and out of reach) without losing its scroll position.
+    func shown(_ visible: Bool) -> some View {
+        opacity(visible ? 1 : 0)
+            .allowsHitTesting(visible)
+            .accessibilityHidden(!visible)
     }
 }
