@@ -226,6 +226,17 @@
         }
       }
     },
+    "Hide Keyboard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nascondi tastiera"
+          }
+        }
+      }
+    },
     "Include time" : {
       "extractionState" : "manual",
       "localizations" : {

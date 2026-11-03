@@ -74,6 +74,7 @@ struct RootView: View {
             for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
                 scene.windows.forEach { $0.tintColor = UIColor(named: "AccentColor") }
             }
+            KeyboardDismissal.install()
             guard !seeded else { return }
             if timelines.isEmpty {
                 let t = Timeline(name: Self.defaultTimelineName)

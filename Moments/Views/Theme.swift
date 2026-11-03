@@ -100,12 +100,23 @@ extension View {
 }
 
 /// A `Form` on paper with print-white rows. Use it instead of `Form` everywhere.
+/// Its keyboard can be dragged away or hidden with a key above it (tapping outside is `KeyboardDismissal`).
 struct PaperForm<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
         Form { content.listRowBackground(Color.card) }
             .paperBackground()
+            .scrollDismissesKeyboard(.interactively)
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button { KeyboardDismissal.hideKeyboard() } label: {
+                        Image(systemName: "keyboard.chevron.compact.down")
+                    }
+                    .accessibilityLabel("Hide Keyboard")
+                }
+            }
     }
 }
 
