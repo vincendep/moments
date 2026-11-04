@@ -16,8 +16,7 @@ struct NoteEditorView: View {
             PaperForm {
                 TitleSection(title: $title, placeholder: Entry.dateLabel(date, hasTime: hasTime))
                 NotesSection(text: $text, minHeight: 160)
-                DateTimeSection(date: $date, hasTime: $hasTime)
-                LocationSection(place: $place, locating: locating)
+                WhenWhereSection(date: $date, hasTime: $hasTime, place: $place, locating: locating)
             }
             .task { await locate() }
             .navigationTitle("New Note")

@@ -18,68 +18,54 @@ struct EntryDetailView: View {
     @State private var confirmDelete = false
     /// The tallest print seen on the pages, so they fit it without empty bands.
     @State private var pageHeight: CGFloat = 0
+    /// The title field is out of sight, so the bar shows the title instead.
+    @State private var titleScrolledAway = false
     /// The print showing on the pages (nil: the first).
     @State private var page: UUID?
+    /// The screen's width and the media's, so the pager can run to the screen edges (see `bleed`).
+    @State private var formWidth: CGFloat = 0
+    @State private var mediaWidth: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Adding: Identifiable { case camera, voice; var id: Self { self } }
 
     var body: some View {
         PaperForm {
-            if !entry.prints.isEmpty {
-                Section { prints }
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-            }
-            if !entry.voiceMemos.isEmpty {
-                Section { memos }
-                    .listRowInsets(entry.prints.isEmpty && entry.voiceMemos.count == 1
-                                   ? EdgeInsets() : EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-            }
-            Section { addMenu }
-            TitleSection(title: $entry.title, placeholder: entry.dateLabel)
-            NotesSection(text: $entry.text, minHeight: 120)
-            DateTimeSection(date: $entry.date, hasTime: $entry.hasTime)
-            LocationSection(place: $entry.place, date: entry.date)
-            Section {
-                Button("Delete Entry", role: .destructive) { confirmDelete = true }
-                    .frame(maxWidth: .infinity)
-                    .confirmationDialog("Delete this entry?", isPresented: $confirmDelete,
-                                        titleVisibility: .visible) {
-                        Button("Delete Entry", role: .destructive, action: delete)
-                    } message: {
-                        switch entry.prints.count {
-                        case 0: Text("This can't be undone.")
-                        case 1: Text("The photo or video stays in your Photos library.")
-                        default: Text("The photos and videos stay in your Photos library.")
-                        }
+            // The title heads the page; the bar shows it only once it has scrolled away.
+            TitleSection(title: $entry.title, placeholder: entry.dateLabel, scrolledAway: $titleScrolledAway)
+            // The media is a section header without rows: a form clips its rows to their rounded cards, which
+            // would cut the tape and the prints sliding past the margin; a header isn't clipped.
+            if !entry.sortedMedia.isEmpty {
+                Section {} header: {
+                    VStack(spacing: 12) {
+                        if !entry.prints.isEmpty { prints }
+                        memos
                     }
+                    .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { mediaWidth = $0 }
+                    .textCase(nil)
+                    .foregroundStyle(Color.ink)
+                    .listRowInsets(EdgeInsets())
+                }
             }
+            NotesSection(text: $entry.text, minHeight: 120)
+            WhenWhereSection(date: $entry.date, hasTime: $entry.hasTime, place: $entry.place, postmarkDate: entry.date)
         }
-        .navigationTitle(entry.displayTitle)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { formWidth = $0 }
+        .navigationTitle(titleScrolledAway ? entry.displayTitle : "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                // The ribbon: outlined in red, filled in marigold (the milestone mark) when it is one.
-                // Marking drops it in from above.
-                Button {
-                    entry.isMilestone.toggle()
-                } label: {
-                    Label { Text("Milestone") } icon: {
-                        Image(entry.isMilestone ? "icon.ribbon.fill" : "icon.ribbon")
-                    }
-                    .keyframeAnimator(initialValue: CGFloat(0), trigger: entry.isMilestone) { label, y in
-                        label.offset(y: y)
-                    } keyframes: { _ in
-                        LinearKeyframe(ribbonDrop, duration: 0.01)
-                        SpringKeyframe(0, duration: 0.4, spring: .bouncy)
-                    }
-                }
-                .tint(entry.isMilestone ? Color.marigold : Color.darkroom)
-                .accessibilityAddTraits(entry.isMilestone ? .isSelected : [])
-                .sensoryFeedback(.impact(weight: .light), trigger: entry.isMilestone)
+            ToolbarItemGroup(placement: .primaryAction) {
+                milestoneButton
+                actionsMenu
+            }
+        }
+        .confirmationDialog("Delete this entry?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Delete Entry", role: .destructive, action: delete)
+        } message: {
+            switch entry.prints.count {
+            case 0: Text("This can't be undone.")
+            case 1: Text("The photo or video stays in your Photos library.")
+            default: Text("The photos and videos stay in your Photos library.")
             }
         }
         .confirmationDialog("Remove this voice memo?", isPresented: Binding(get: { memoToRemove != nil },
@@ -113,6 +99,9 @@ struct EntryDetailView: View {
         }
     }
 
+    /// The form's margin on each side of the media: the pager reaches past it to the screen edges.
+    private var bleed: CGFloat { max(0, (formWidth - mediaWidth) / 2) }
+
     /// How far the ribbon drops in from when marking a milestone (none when unmarking or with Reduce Motion).
     private var ribbonDrop: CGFloat { entry.isMilestone && !reduceMotion ? -14 : 0 }
 
@@ -120,16 +109,17 @@ struct EntryDetailView: View {
     @ViewBuilder private var prints: some View {
         let items = entry.prints
         if items.count == 1, let item = items.first {
-            PrintPage(item: item, date: entry.date).contextMenu { printMenu(item) }
+            PrintPage(item: item, date: entry.date) { ItemActions { printMenu(item) } }
         } else {
             TabView(selection: $page) {
                 ForEach(items) { item in
                     // Sized to the photo, as a single print is in the form; the pages take the tallest one's height.
-                    PrintPage(item: item, date: entry.date)
+                    PrintPage(item: item, date: entry.date) { ItemActions { printMenu(item) } }
                         .fixedSize(horizontal: false, vertical: true)
                         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
                             pageHeight = max(pageHeight, $0)
                         }
+                        .padding(.horizontal, bleed)
                         .tag(Optional(item.uuid))
                 }
             }
@@ -137,10 +127,10 @@ struct EntryDetailView: View {
             .indexViewStyle(.page(backgroundDisplayMode: .always))
             // Room below the prints for the page dots.
             .frame(height: max(pageHeight, 300) + 36)
-            // On the pager, for the page showing: the pages' own scroller swallows a long press on them.
-            .contextMenu {
-                if let item = items.first(where: { $0.uuid == page }) ?? items.first { printMenu(item) }
-            }
+            // Edge to edge, so a print slides off the screen rather than being cut at the form's margin.
+            .padding(.horizontal, -bleed)
+            // Opens on the first print, also when the pager widens once the widths are known.
+            .onAppear { if page == nil { page = items.first?.uuid } }
         }
     }
 
@@ -159,28 +149,31 @@ struct EntryDetailView: View {
         if entry.prints.isEmpty, items.count == 1, let memo = items.first {
             VStack(spacing: 16) {
                 CassetteView(title: entry.displayTitle, spinning: isPlaying(memo))
-                Button { toggle(memo) } label: {
-                    Label {
-                        Text(isPlaying(memo) ? "Stop" : "Play Voice Memo")
-                    } icon: {
-                        if isPlaying(memo) { Image(systemName: "stop.fill") } else { Image("icon.play") }
+                HStack {
+                    Button { toggle(memo) } label: {
+                        Label {
+                            Text(isPlaying(memo) ? "Stop" : "Play Voice Memo")
+                        } icon: {
+                            if isPlaying(memo) { Image(systemName: "stop.fill") } else { Image("icon.play") }
+                        }
+                        .font(.headline)
+                        .padding(.horizontal, 20)
+                        .frame(minHeight: 44)
+                        .overlay(Capsule().strokeBorder(Color.darkroom, lineWidth: 1.5))
                     }
-                    .font(.headline)
-                    .padding(.horizontal, 20)
-                    .frame(minHeight: 44)
-                    .overlay(Capsule().strokeBorder(Color.darkroom, lineWidth: 1.5))
+                    .buttonStyle(.borderless)
+                    ItemActions { removeMemoButton(memo) }
                 }
-                .buttonStyle(.borderless)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 20)
-            .contentShape(Rectangle())
-            .contextMenu { removeMemoButton(memo) }
         } else {
             ForEach(items) { memo in
-                CassetteCard(isPlaying: isPlaying(memo)) { toggle(memo) } label: { MemoLabel(memo: memo) }
-                    .padding(.horizontal, 18)
-                    .contextMenu { removeMemoButton(memo) }
+                CassetteCard(isPlaying: isPlaying(memo)) { toggle(memo) } label: {
+                    MemoLabel(memo: memo)
+                } actions: {
+                    ItemActions { removeMemoButton(memo) }
+                }
             }
         }
     }
@@ -191,16 +184,42 @@ struct EntryDetailView: View {
         }
     }
 
-    /// Adds a photo, video or voice memo to this entry; its date and place stay as they are.
-    private var addMenu: some View {
+    /// The entry's actions, top right: adding a photo, video or voice memo (the entry's date and place stay
+    /// as they are) and deleting it.
+    private var actionsMenu: some View {
         Menu {
-            Button { adding = .camera } label: { Label { Text("Camera") } icon: { Image("icon.camera") } }
-            Button { showPicker = true } label: { Label { Text("From Library") } icon: { Image("icon.library") } }
-            Button { adding = .voice } label: { Label { Text("Voice Memo") } icon: { Image("icon.voice") } }
+            Section("Add to This Moment") {
+                Button { adding = .camera } label: { Label { Text("Camera") } icon: { Image("icon.camera") } }
+                Button { showPicker = true } label: { Label { Text("From Library") } icon: { Image("icon.library") } }
+                Button { adding = .voice } label: { Label { Text("Voice Memo") } icon: { Image("icon.voice") } }
+            }
+            Button(role: .destructive) { confirmDelete = true } label: {
+                Label { Text("Delete Entry") } icon: { Image("icon.delete") }
+            }
         } label: {
-            Label("Add to This Moment", systemImage: "plus")
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Label("Options", systemImage: "ellipsis.circle")
         }
+    }
+
+    /// The ribbon, beside the menu: outlined in red, filled in marigold (the milestone mark) when it is one.
+    /// Marking drops it in from above.
+    private var milestoneButton: some View {
+        Button {
+            entry.isMilestone.toggle()
+        } label: {
+            Label { Text("Milestone") } icon: {
+                Image(entry.isMilestone ? "icon.ribbon.fill" : "icon.ribbon")
+            }
+            .keyframeAnimator(initialValue: CGFloat(0), trigger: entry.isMilestone) { label, y in
+                label.offset(y: y)
+            } keyframes: { _ in
+                LinearKeyframe(ribbonDrop, duration: 0.01)
+                SpringKeyframe(0, duration: 0.4, spring: .bouncy)
+            }
+        }
+        .tint(entry.isMilestone ? Color.marigold : Color.darkroom)
+        .accessibilityAddTraits(entry.isMilestone ? .isSelected : [])
+        .sensoryFeedback(.impact(weight: .light), trigger: entry.isMilestone)
     }
 
     private func isPlaying(_ memo: MediaItem) -> Bool { audio.isPlaying && playingID == memo.uuid }
@@ -235,11 +254,12 @@ struct EntryDetailView: View {
     }
 }
 
-/// A photo or video as a print taped onto the page, with the date stamp flickering on.
-/// Loads its own image or player, and pauses the video once swiped away.
-private struct PrintPage: View {
+/// A photo or video as a print taped onto the page, with the date stamp flickering on and its actions
+/// in the bottom border. Loads its own image or player, and pauses the video once swiped away.
+private struct PrintPage<Actions: View>: View {
     let item: MediaItem
     let date: Date
+    @ViewBuilder var actions: Actions
     @State private var image: UIImage?
     @State private var player: AVPlayer?
     /// Flipped on appear to flicker the date stamp on, like an old LCD.
@@ -293,11 +313,11 @@ private struct PrintPage: View {
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 30, trailing: 10))
             .background(Color.card)
+            .overlay(alignment: .bottomLeading) { actions.padding(.leading, 2) }
             .printShadow(14)
             .rotationEffect(.degrees(-1))
             .overlay(alignment: .topLeading) { Tape().rotationEffect(.degrees(-32)).offset(x: -16, y: -2) }
             .overlay(alignment: .topTrailing) { Tape(color: .darkroom).rotationEffect(.degrees(30)).offset(x: 16, y: 0) }
-            .padding(.horizontal, 18)
             .padding(.vertical, 22)
             .frame(maxWidth: .infinity)
     }
@@ -310,6 +330,23 @@ private struct PrintPage: View {
         default:
             image = await PhotoService.image(id, size: CGSize(width: 1600, height: 1600))
         }
+    }
+}
+
+/// "⋯", opening a print's or memo's actions. A button rather than a long press, which doesn't reach
+/// views in the form's header, where the media is.
+private struct ItemActions<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        Menu { content } label: {
+            Image(systemName: "ellipsis")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 44, height: 30)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Options")
     }
 }
 

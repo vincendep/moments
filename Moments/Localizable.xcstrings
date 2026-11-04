@@ -145,6 +145,17 @@
         }
       }
     },
+    "Add Time" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi ora"
+          }
+        }
+      }
+    },
     "Add to This Moment" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -318,17 +329,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nascondi tastiera"
-          }
-        }
-      }
-    },
-    "Include time" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Includi ora"
           }
         }
       }
@@ -687,6 +687,17 @@
         }
       }
     },
+    "Options" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opzioni"
+          }
+        }
+      }
+    },
     "Photos and videos are always kept in your Photos library. This only changes which album new ones are added to." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -782,6 +793,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rimuovere questo memo vocale?"
+          }
+        }
+      }
+    },
+    "Remove Time" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi ora"
           }
         }
       }

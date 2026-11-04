@@ -115,14 +115,15 @@ struct CassetteView: View {
     }
 }
 
-/// A voice memo as a cassette card: the tile, a label and the play button. Used by voice-only timeline rows
-/// and for each memo in an entry's details.
-struct CassetteCard<Label: View>: View {
+/// A voice memo as a cassette card: the tile, a label, any actions and the play button. Used by voice-only
+/// timeline rows and for each memo in an entry's details.
+struct CassetteCard<Label: View, Actions: View>: View {
     var isPlaying: Bool
     /// Shown on the tile as "×2" when the entry has several memos.
     var count: Int = 1
     var toggle: () -> Void
     @ViewBuilder var label: Label
+    @ViewBuilder var actions: Actions
 
     var body: some View {
         HStack(spacing: 14) {
@@ -139,6 +140,7 @@ struct CassetteCard<Label: View>: View {
                 }
                 .accessibilityHidden(true)
             label.frame(maxWidth: .infinity, alignment: .leading)
+            actions
             Button(action: toggle) {
                 Group {
                     if isPlaying {
@@ -157,6 +159,12 @@ struct CassetteCard<Label: View>: View {
         .padding(14)
         .background(Color.card, in: RoundedRectangle(cornerRadius: 6))
         .printShadow(8)
+    }
+}
+
+extension CassetteCard where Actions == EmptyView {
+    init(isPlaying: Bool, count: Int = 1, toggle: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.init(isPlaying: isPlaying, count: count, toggle: toggle, label: label, actions: { EmptyView() })
     }
 }
 

@@ -24,8 +24,7 @@ struct VoiceRecorderView: View {
                 Section { recorder.frame(maxWidth: .infinity).padding(.vertical, 24) }
                 if adding == nil, recording != nil, !audio.isRecording {
                     TitleSection(title: $title, placeholder: Entry.dateLabel(date, hasTime: hasTime))
-                    DateTimeSection(date: $date, hasTime: $hasTime)
-                    LocationSection(place: $place, locating: locating)
+                    WhenWhereSection(date: $date, hasTime: $hasTime, place: $place, locating: locating)
                 }
             }
             .task { if adding == nil { await locate() } }
