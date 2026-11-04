@@ -1,0 +1,57 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build Moments and upload it to TestFlight"
+  desc "Needs ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_PATH (an App Store Connect API key), e.g. in fastlane/.env"
+  desc "Optional: CHANGELOG, the What to Test text for testers"
+  desc "Options: skip_build:true uploads the IPA from the last build (build/Moments.ipa) without rebuilding"
+  lane :beta do |options|
+    key_path = File.expand_path(ENV.fetch("ASC_KEY_PATH"))
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_filepath: key_path
+    )
+
+    # Lane code runs in fastlane/ (actions run from the repo root), hence the "..".
+    ipa = File.expand_path("../build/Moments.ipa")
+
+    if options[:skip_build]
+      UI.user_error!("No build to upload at #{ipa}: run without skip_build first") unless File.exist?(ipa)
+    else
+      # The Xcode project isn't checked in: generate it from project.yml.
+      Dir.chdir("..") { sh("xcodegen") }
+
+      # The version stays MARKETING_VERSION in project.yml; the build number is one past the
+      # latest on TestFlight, so project.yml doesn't need a bump for every upload.
+      build = latest_testflight_build_number(api_key: api_key, initial_build_number: 0) + 1
+
+      build_app(
+        project: "Moments.xcodeproj",
+        scheme: "Moments",
+        export_method: "app-store",
+        output_directory: File.dirname(ipa),
+        output_name: File.basename(ipa),
+        clean: true,
+        # Automatic signing with the API key: Xcode creates or fetches the distribution
+        # certificate and profile itself, with no Xcode account sign-in.
+        xcargs: [
+          "CURRENT_PROJECT_VERSION=#{build}",
+          "-allowProvisioningUpdates",
+          "-authenticationKeyPath #{key_path.shellescape}",
+          "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')}",
+          "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
+        ].join(" "),
+      )
+    end
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: ipa,
+      changelog: ENV["CHANGELOG"],
+      # Processing takes a while and App Store Connect emails when it's done, so don't wait,
+      # unless there is a What to Test text: it can only be set on a processed build.
+      skip_waiting_for_build_processing: ENV["CHANGELOG"].to_s.empty?
+    )
+  end
+end

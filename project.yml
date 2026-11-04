@@ -39,7 +39,7 @@ targets:
         # The personal paid team (Vincenzo De Petris), needed for iCloud.
         DEVELOPMENT_TEAM: 6L2D8L726C
         CODE_SIGN_STYLE: Automatic
-        # The version people see on the App Store; raise the build number for every upload.
+        # The version people see on the App Store. `bundle exec fastlane beta` sets the build number on upload.
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"

@@ -5,3 +5,10 @@ xcuserdata/
 DerivedData/
 build/
 .claude/settings.local.json
+# fastlane: local secrets and generated files.
+fastlane/.env
+fastlane/report.xml
+fastlane/README.md
+*.p8
+# Bundler installs the gems inside the repo (see .bundle/config).
+vendor/bundle/
