@@ -12,6 +12,8 @@ struct TimelineView: View {
     @State private var picked: AddMomentSheet.Choice?
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showPicker = false
+    /// Several items were picked: asks whether they make one moment or one each.
+    @State private var askGrouping = false
     /// Shows only the milestones, each with the time since the first one.
     @State private var milestonesOnly = false
     /// The Milestones list is created on its first visit, so its thread draws in when first seen.
@@ -53,7 +55,15 @@ struct TimelineView: View {
         .safeAreaInset(edge: .bottom) { shutter }
         .photosPicker(isPresented: $showPicker, selection: $pickerItems,
                       photoLibrary: .shared())
-        .onChange(of: pickerItems) { _, items in importItems(items) }
+        .onChange(of: pickerItems) { _, items in
+            if items.count > 1 { askGrouping = true } else if !items.isEmpty { importItems(items, together: false) }
+        }
+        .confirmationDialog("Add \(pickerItems.count) photos and videos", isPresented: $askGrouping,
+                            titleVisibility: .visible) {
+            Button("Add as One Moment") { importItems(pickerItems, together: true) }
+            Button("Add as Separate Moments") { importItems(pickerItems, together: false) }
+            Button("Cancel", role: .cancel) { pickerItems = [] }
+        }
         .sheet(item: $sheet, onDismiss: openPicked) { s in
             switch s {
             case .add:
@@ -63,8 +73,7 @@ struct TimelineView: View {
                 }
             case .camera:
                 CameraView(timeline: timeline) { kind, id, location in
-                    let entry = Entry(kind: kind, timeline: timeline, assetLocalID: id,
-                                      assetCloudID: PhotoService.cloudID(forLocalID: id))
+                    let entry = Entry(timeline: timeline, media: [MediaItem(kind, assetLocalID: id)])
                     Arrival.mark(entry)
                     ctx.insert(entry)
                     if let location { Task { entry.place = await LocationService.place(for: location) } }
@@ -138,34 +147,29 @@ struct TimelineView: View {
         }
     }
 
-    /// Links existing Photos assets by reference (no copy), optionally adding them to the album.
-    /// Entries take the asset's own date and location, never the current ones.
-    private func importItems(_ items: [PhotosPickerItem]) {
-        var ids: [String] = []
+    /// Links existing Photos assets by reference (no copy), optionally adding them to the album: all in one
+    /// entry (`together`, dated by the oldest) or one entry each. Entries take the assets' own date and
+    /// location, never the current ones.
+    private func importItems(_ items: [PhotosPickerItem], together: Bool) {
+        let assets = PhotoService.assets(for: items)
+        pickerItems = []
+        guard !assets.isEmpty else { return }
         var located: [(Entry, CLLocation)] = []
-        for item in items {
-            guard let id = item.itemIdentifier, let asset = PhotoService.asset(id) else { continue }
-            let kind: EntryKind = asset.mediaType == .video ? .video : .photo
-            let entry = Entry(kind: kind, timeline: timeline, date: asset.creationDate ?? .now, assetLocalID: id,
-                              assetCloudID: PhotoService.cloudID(forLocalID: id))
+        let groups = together ? [assets] : assets.map { [$0] }
+        for group in groups {
+            let entry = Entry(timeline: timeline, date: group[0].creationDate ?? .now,
+                              media: group.map(PhotoService.item(for:)))
             Arrival.mark(entry)
             ctx.insert(entry)
-            ids.append(id)
-            if let location = asset.location { located.append((entry, location)) }
+            if let location = group.lazy.compactMap(\.location).first { located.append((entry, location)) }
         }
-        pickerItems = []
         // Named one at a time after inserting, so a large import isn't held up (the geocoder is rate-limited).
         if !located.isEmpty {
             Task {
                 for (entry, location) in located { entry.place = await LocationService.place(for: location) }
             }
         }
-        guard timeline.addImportsToAlbum, !ids.isEmpty else { return }
-        Task {
-            if let album = try? await PhotoService.album(for: timeline) {
-                try? await PhotoService.add(assetIDs: ids, to: album)
-            }
-        }
+        PhotoService.addImports(assets, for: timeline)
     }
 }
 

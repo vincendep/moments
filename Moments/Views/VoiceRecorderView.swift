@@ -1,7 +1,10 @@
 import SwiftUI
 
+/// Records a voice memo as a new entry, or, with `adding`, as one more memo of an existing entry
+/// (then without its own title, date and place).
 struct VoiceRecorderView: View {
     let timeline: Timeline
+    var adding: Entry? = nil
     @Environment(\.modelContext) private var ctx
     @Environment(\.dismiss) private var dismiss
     @State private var audio = AudioService()
@@ -19,14 +22,14 @@ struct VoiceRecorderView: View {
         NavigationStack {
             PaperForm {
                 Section { recorder.frame(maxWidth: .infinity).padding(.vertical, 24) }
-                if recording != nil, !audio.isRecording {
+                if adding == nil, recording != nil, !audio.isRecording {
                     TitleSection(title: $title, placeholder: Entry.dateLabel(date, hasTime: hasTime))
                     DateTimeSection(date: $date, hasTime: $hasTime)
                     LocationSection(place: $place, locating: locating)
                 }
             }
-            .task { await locate() }
-            .navigationTitle("Voice Memo")
+            .task { if adding == nil { await locate() } }
+            .navigationTitle(adding == nil ? Text("Voice Memo") : Text("Add Voice Memo"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -37,8 +40,14 @@ struct VoiceRecorderView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        let entry = Entry(kind: .voice, timeline: timeline, date: date, hasTime: hasTime,
-                                          title: title, audioData: recording, place: place)
+                        guard let recording else { return }
+                        if let adding {
+                            adding.add(MediaItem(audio: recording))
+                            dismiss()
+                            return
+                        }
+                        let entry = Entry(timeline: timeline, date: date, hasTime: hasTime, title: title,
+                                          media: [MediaItem(audio: recording)], place: place)
                         Arrival.mark(entry)
                         ctx.insert(entry)
                         dismiss()

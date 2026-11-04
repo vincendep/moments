@@ -23,6 +23,6 @@ struct MomentsApp: App {
 
     var body: some Scene {
         WindowGroup { RootView().tint(.darkroom) }
-            .modelContainer(for: [Timeline.self, Entry.self])
+            .modelContainer(for: [Timeline.self, Entry.self, MediaItem.self])
     }
 }

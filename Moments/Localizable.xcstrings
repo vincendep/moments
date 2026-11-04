@@ -60,6 +60,28 @@
         }
       }
     },
+    "Add as One Moment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi come un solo momento"
+          }
+        }
+      }
+    },
+    "Add as Separate Moments" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi come momenti separati"
+          }
+        }
+      }
+    },
     "Add library imports to album" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -71,6 +93,47 @@
         }
       }
     },
+    "Add %lld photos and videos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld photo or video"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld photos and videos"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aggiungi %lld foto o video"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Aggiungi %lld foto e video"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Add Location" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -78,6 +141,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiungi posizione"
+          }
+        }
+      }
+    },
+    "Add to This Moment" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi a questo momento"
+          }
+        }
+      }
+    },
+    "Add Voice Memo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi memo vocale"
           }
         }
       }
@@ -281,6 +366,129 @@
         }
       }
     },
+    "%lld photos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld photos"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld foto"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld foto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld videos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld video"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld videos"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld video"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld video"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld voice memos" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld voice memo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld voice memos"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld memo vocale"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld memo vocali"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Location" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -288,6 +496,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posizione"
+          }
+        }
+      }
+    },
+    "Make Cover" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa come copertina"
           }
         }
       }
@@ -534,6 +753,17 @@
         }
       }
     },
+    "Remove" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi"
+          }
+        }
+      }
+    },
     "Remove Location" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -541,6 +771,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rimuovi posizione"
+          }
+        }
+      }
+    },
+    "Remove this voice memo?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovere questo memo vocale?"
           }
         }
       }
@@ -667,6 +908,17 @@
         }
       }
     },
+    "The photos and videos stay in your Photos library." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le foto e i video restano nella libreria di Foto."
+          }
+        }
+      }
+    },
     "This can't be undone." : {
       "extractionState" : "manual",
       "localizations" : {
@@ -707,17 +959,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impostazioni timeline"
-          }
-        }
-      }
-    },
-    "Video" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Video"
           }
         }
       }

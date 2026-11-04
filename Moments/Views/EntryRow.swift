@@ -50,7 +50,7 @@ private struct Caption: View {
     }
 }
 
-/// Loads the entry's photo or video frame from Photos.
+/// Loads the entry's cover photo or video frame from Photos.
 private struct Thumbnail: View {
     let entry: Entry
     var size: CGSize
@@ -66,8 +66,8 @@ private struct Thumbnail: View {
                 }
             }
             .clipped()
-            .task(id: entry.assetLocalID) {
-                if let id = PhotoService.localID(for: entry) {
+            .task(id: entry.cover?.uuid) {
+                if let item = entry.cover, let id = PhotoService.localID(for: item) {
                     image = await PhotoService.image(id, size: size)
                 }
             }
@@ -75,7 +75,8 @@ private struct Thumbnail: View {
 }
 
 /// A photo or video as a print: white border, a slight tilt, the date stamp in the corner.
-/// A print added on this device drops onto the page and develops in.
+/// With several, the cover sits on a stack with "+2" pencilled beside it; voice memos are a cassette
+/// tucked under its corner. A print added on this device drops onto the page and develops in.
 private struct PrintRow: View {
     let entry: Entry
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -92,12 +93,17 @@ private struct PrintRow: View {
 
     var body: some View {
         let leading = tilt < 0
-        VStack(alignment: .leading, spacing: 12) {
-            photoPrint
-                .rotationEffect(.degrees(dropped ? tilt : -9))
-                .offset(y: dropped ? 0 : -50)
-                .opacity(shown ? 1 : 0)
-                .frame(maxWidth: .infinity, alignment: leading ? .leading : .trailing)
+        // Room below the print for the cassette tucked under its corner.
+        VStack(alignment: .leading, spacing: entry.voiceMemos.isEmpty ? 12 : 24) {
+            HStack(spacing: 14) {
+                if !leading { morePrints }
+                photoPrint
+                    .rotationEffect(.degrees(dropped ? tilt : -9))
+                    .offset(y: dropped ? 0 : -50)
+                    .opacity(shown ? 1 : 0)
+                if leading { morePrints }
+            }
+            .frame(maxWidth: .infinity, alignment: leading ? .leading : .trailing)
             Caption(entry: entry).padding(.leading, 4)
         }
         .onAppear(perform: arrive)
@@ -119,17 +125,44 @@ private struct PrintRow: View {
                         .foregroundStyle(.white)
                         .frame(width: 44, height: 44)
                         .background(Circle().fill(.black.opacity(0.45)))
-                        .accessibilityLabel("Video")
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(entry.mediaSummary))
             .padding(EdgeInsets(top: 9, leading: 9, bottom: 26, trailing: 9))
             .background(Color.card)
             .printShadow()
+            .background { stack }
+            .overlay(alignment: .bottomLeading) {
+                if !entry.voiceMemos.isEmpty { MemoTile(entry: entry).offset(x: -10, y: 20) }
+            }
             .overlay(alignment: .topTrailing) {
                 if entry.isMilestone {
                     Ribbon().offset(x: -22, y: -6).transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
+    }
+
+    /// Blank prints peeking out from under the cover when there are more (only the cover is loaded).
+    private var stack: some View {
+        ZStack {
+            ForEach(0..<min(entry.prints.count - 1, 2), id: \.self) { i in
+                Color.card
+                    .printShadow(6)
+                    .rotationEffect(.degrees(i == 0 ? 3.5 : -3))
+                    .offset(x: i == 0 ? 6 : -5, y: i == 0 ? 3 : 6)
+            }
+        }
+    }
+
+    /// "+2" pencilled in the margin beside a stack.
+    @ViewBuilder private var morePrints: some View {
+        if entry.prints.count > 1 {
+            Text(verbatim: "+\(entry.prints.count - 1)")
+                .font(.margin)
+                .foregroundStyle(.pencil)
+                .accessibilityHidden(true)
+        }
     }
 
     private func arrive() {
@@ -150,42 +183,52 @@ private struct PrintRow: View {
     }
 }
 
-/// A voice memo as a cassette card, with its play button.
+/// A print's voice memos as a small cassette tile tucked under its corner; it plays the first one.
+private struct MemoTile: View {
+    let entry: Entry
+    @State private var audio = AudioService()
+
+    var body: some View {
+        let count = entry.voiceMemos.count
+        Button {
+            guard let data = entry.voiceMemos.first?.audioData else { return }
+            audio.isPlaying ? audio.stopPlaying() : audio.play(data)
+        } label: {
+            HStack(spacing: 4) {
+                if audio.isPlaying {
+                    Image(systemName: "stop.fill")
+                } else {
+                    Image("icon.voice").resizable().frame(width: 26, height: 26)
+                }
+                if count > 1 { Text(verbatim: "×\(count)").font(.caption.weight(.semibold)) }
+            }
+            .foregroundStyle(.darkroom)
+            .padding(.horizontal, 10)
+            .frame(minWidth: 52, minHeight: 44)
+            .background(Color.tab, in: RoundedRectangle(cornerRadius: 5))
+            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.card, lineWidth: 2))
+            .shadow(color: .shadow, radius: 4, y: 2)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .rotationEffect(.degrees(-4))
+        .accessibilityLabel(audio.isPlaying ? "Stop" : "Play Voice Memo")
+        .onDisappear { audio.stopPlaying() }
+    }
+}
+
+/// A voice-only entry as a cassette card; its button plays the first memo.
 private struct CassetteRow: View {
     let entry: Entry
     @State private var audio = AudioService()
 
     var body: some View {
-        HStack(spacing: 14) {
-            Image("icon.voice")
-                .resizable()
-                .frame(width: 34, height: 34)
-                .foregroundStyle(.darkroom)
-                .frame(width: 58, height: 42)
-                .background(Color.tab, in: RoundedRectangle(cornerRadius: 5))
-                .accessibilityHidden(true)
-            Caption(entry: entry).frame(maxWidth: .infinity, alignment: .leading)
-            Button {
-                guard let data = entry.audioData else { return }
-                audio.isPlaying ? audio.stopPlaying() : audio.play(data)
-            } label: {
-                Group {
-                    if audio.isPlaying {
-                        Image(systemName: "stop.fill")
-                    } else {
-                        Image("icon.play")
-                    }
-                }
-                .foregroundStyle(.darkroom)
-                .frame(width: 44, height: 44)
-                .overlay(Circle().strokeBorder(Color.darkroom, lineWidth: 1.5))
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(audio.isPlaying ? "Stop" : "Play Voice Memo")
+        CassetteCard(isPlaying: audio.isPlaying, count: entry.voiceMemos.count) {
+            guard let data = entry.voiceMemos.first?.audioData else { return }
+            audio.isPlaying ? audio.stopPlaying() : audio.play(data)
+        } label: {
+            Caption(entry: entry)
         }
-        .padding(14)
-        .background(Color.card, in: RoundedRectangle(cornerRadius: 6))
-        .printShadow(8)
         .overlay(alignment: .topTrailing) {
             if entry.isMilestone {
                 Ribbon(width: 20).offset(x: -70, y: -6).transition(.move(edge: .top).combined(with: .opacity))
@@ -262,5 +305,18 @@ private struct MilestoneCard: View {
         .padding(10)
         .background(Color.card, in: RoundedRectangle(cornerRadius: 6))
         .printShadow(8)
+    }
+}
+
+private extension Entry {
+    /// What an entry holds, for VoiceOver, e.g. "3 photos, 1 video and 1 voice memo".
+    var mediaSummary: String {
+        let photos = prints.filter { $0.kind == .photo }.count
+        let videos = prints.count - photos
+        var parts: [String] = []
+        if photos > 0 { parts.append(String(localized: "\(photos) photos")) }
+        if videos > 0 { parts.append(String(localized: "\(videos) videos")) }
+        if !voiceMemos.isEmpty { parts.append(String(localized: "\(voiceMemos.count) voice memos")) }
+        return parts.formatted(.list(type: .and))
     }
 }

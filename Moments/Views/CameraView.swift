@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 /// current location when location access was given (also written to the asset).
 struct CameraView: UIViewControllerRepresentable {
     let timeline: Timeline
-    var onSaved: (EntryKind, String, CLLocation?) -> Void
+    var onSaved: (MediaKind, String, CLLocation?) -> Void
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {

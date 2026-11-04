@@ -1,7 +1,9 @@
 import AVFoundation
 import CoreLocation
 import Photos
+import PhotosUI
 import SwiftData
+import SwiftUI
 import UIKit
 
 /// Saves media to Photos (optionally into an album) and returns only the asset ID.
@@ -89,26 +91,46 @@ enum PhotoService {
     /// Records the iCloud ID of assets added on this device whose ID wasn't known yet
     /// (a fresh capture only gets one once it reaches iCloud), so other devices can find them.
     @MainActor static func backfillCloudIDs(in ctx: ModelContext) {
-        let pending = FetchDescriptor<Entry>(predicate: #Predicate { $0.assetLocalID != nil && $0.assetCloudID == nil })
-        guard let entries = try? ctx.fetch(pending), !entries.isEmpty else { return }
-        for e in entries {
-            if let id = e.assetLocalID { e.assetCloudID = cloudID(forLocalID: id) }
+        let pending = FetchDescriptor<MediaItem>(predicate: #Predicate { $0.assetLocalID != nil && $0.assetCloudID == nil })
+        guard let items = try? ctx.fetch(pending), !items.isEmpty else { return }
+        for item in items {
+            if let id = item.assetLocalID { item.assetCloudID = cloudID(forLocalID: id) }
         }
         try? ctx.save()
     }
 
     @MainActor private static var resolvedCloudIDs: [String: String] = [:]
 
-    /// This device's ID for the entry's asset: the stored one when it was added here, otherwise
+    /// This device's ID for the item's asset: the stored one when it was added here, otherwise
     /// looked up by its iCloud ID. Never written back, since each device has its own.
-    @MainActor static func localID(for entry: Entry) -> String? {
-        if let id = entry.assetLocalID, asset(id) != nil { return id }
-        guard let cloud = entry.assetCloudID else { return nil }
+    @MainActor static func localID(for item: MediaItem) -> String? {
+        if let id = item.assetLocalID, asset(id) != nil { return id }
+        guard let cloud = item.assetCloudID else { return nil }
         if let id = resolvedCloudIDs[cloud] { return id }
         let key = PHCloudIdentifier(stringValue: cloud)
         guard case .success(let id)? = PHPhotoLibrary.shared().localIdentifierMappings(for: [key])[key] else { return nil }
         resolvedCloudIDs[cloud] = id
         return id
+    }
+
+    /// The assets picked in a `PhotosPicker`, oldest first.
+    static func assets(for items: [PhotosPickerItem]) -> [PHAsset] {
+        items.compactMap { $0.itemIdentifier.flatMap(asset) }
+            .sorted { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }
+    }
+
+    /// A picked asset as an entry's photo or video, linked by reference (no copy).
+    static func item(for asset: PHAsset) -> MediaItem {
+        MediaItem(asset.mediaType == .video ? .video : .photo, assetLocalID: asset.localIdentifier)
+    }
+
+    /// Adds picked assets to the timeline's album, when its settings ask for it.
+    @MainActor static func addImports(_ assets: [PHAsset], for timeline: Timeline) {
+        guard timeline.addImportsToAlbum, !assets.isEmpty else { return }
+        let ids = assets.map(\.localIdentifier)
+        Task {
+            if let album = try? await album(for: timeline) { try? await add(assetIDs: ids, to: album) }
+        }
     }
 
     static func add(assetIDs: [String], to album: PHAssetCollection) async throws {

@@ -11,6 +11,7 @@ struct RootView: View {
     private static let defaultTimelineName = String(localized: "My Timeline")
 
     @Environment(\.modelContext) private var ctx
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \Timeline.createdAt) private var timelines: [Timeline]
     /// Set once the first-launch default timeline has been created, so deleting it later doesn't bring it back.
     @AppStorage("seededDefaultTimeline") private var seeded = false
@@ -84,7 +85,10 @@ struct RootView: View {
             seeded = true
         }
         .onChange(of: timelines.count) { removeRedundantDefaultTimeline() }
+        // Entries that arrive from iCloud in the old single-media form are moved over as well.
+        .onChange(of: scenePhase) { _, phase in if phase == .active { MediaMigration.run(in: ctx) } }
         .task {
+            MediaMigration.run(in: ctx)
             if await PhotoService.requestAccess() { PhotoService.backfillCloudIDs(in: ctx) }
         }
     }

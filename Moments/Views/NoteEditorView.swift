@@ -26,7 +26,7 @@ struct NoteEditorView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        let entry = Entry(kind: .note, timeline: timeline, date: date, hasTime: hasTime,
+                        let entry = Entry(timeline: timeline, date: date, hasTime: hasTime,
                                           title: title, text: text, place: place)
                         Arrival.mark(entry)
                         ctx.insert(entry)

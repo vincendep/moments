@@ -115,6 +115,51 @@ struct CassetteView: View {
     }
 }
 
+/// A voice memo as a cassette card: the tile, a label and the play button. Used by voice-only timeline rows
+/// and for each memo in an entry's details.
+struct CassetteCard<Label: View>: View {
+    var isPlaying: Bool
+    /// Shown on the tile as "×2" when the entry has several memos.
+    var count: Int = 1
+    var toggle: () -> Void
+    @ViewBuilder var label: Label
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image("icon.voice")
+                .resizable()
+                .frame(width: 34, height: 34)
+                .foregroundStyle(.darkroom)
+                .frame(width: 58, height: 42)
+                .background(Color.tab, in: RoundedRectangle(cornerRadius: 5))
+                .overlay(alignment: .bottomTrailing) {
+                    if count > 1 {
+                        Text(verbatim: "×\(count)").font(.caption2.weight(.semibold)).padding(.trailing, 4)
+                    }
+                }
+                .accessibilityHidden(true)
+            label.frame(maxWidth: .infinity, alignment: .leading)
+            Button(action: toggle) {
+                Group {
+                    if isPlaying {
+                        Image(systemName: "stop.fill")
+                    } else {
+                        Image("icon.play")
+                    }
+                }
+                .foregroundStyle(.darkroom)
+                .frame(width: 44, height: 44)
+                .overlay(Circle().strokeBorder(Color.darkroom, lineWidth: 1.5))
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(isPlaying ? "Stop" : "Play Voice Memo")
+        }
+        .padding(14)
+        .background(Color.card, in: RoundedRectangle(cornerRadius: 6))
+        .printShadow(8)
+    }
+}
+
 private struct TrapezoidShape: Shape {
     func path(in r: CGRect) -> Path {
         var p = Path()
