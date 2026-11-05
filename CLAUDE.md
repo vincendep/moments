@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Moments is a private SwiftUI iOS app (iOS 17+, iPhone only) for keeping multiple timelines of photos, videos, notes and voice memos. Any entry can be a milestone; a milestones view shows them on a line with the time between them. No third-party dependencies and no tests yet.
+Moments is a private SwiftUI iOS app (iOS 17+, iPhone only) for keeping multiple timelines of photos, videos, notes and voice memos. Any entry can be a milestone; a milestones view shows them on a line with the time between them. No third-party dependencies. Unit tests for the models and services are in `MomentsTests` (Swift Testing).
 
 ## Build
 
@@ -17,6 +17,12 @@ xcodegen
 ```bash
 xcodebuild -project Moments.xcodeproj -scheme Moments -destination 'generic/platform=iOS Simulator' build
 ```
+
+```bash
+xcodebuild -project Moments.xcodeproj -scheme Moments -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+```
+
+(or `bundle exec fastlane test`). The scheme runs tests in English (`language`/`region` in `project.yml`), so they can assert user-facing strings. Tests use a fresh in-memory `TestStore` (`ModelConfiguration` with `cloudKitDatabase: .none`) and create media with an explicit `assetCloudID` (the `photo()`/`video()`/`memo()` helpers), so nothing touches Photos or iCloud. Views and the Photos, location and audio services aren't unit-tested; logic worth testing goes in the models (e.g. `Timeline.entriesByMonth` and `scrubberDays` in `Models/TimelineGrouping.swift`, `Place.name(_:locality:)`).
 
 The camera needs a real device; on the simulator `CameraView` falls back to the photo library. For location, set one with `xcrun simctl location <device> set <lat>,<lon>`; `xcrun simctl privacy <device> reset location it.vincendep.moments` brings the consent prompt back.
 

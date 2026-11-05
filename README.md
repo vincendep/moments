@@ -8,6 +8,9 @@ A private iOS timeline manager: keep any number of timelines of photos, videos, 
 3. For a device: set `DEVELOPMENT_TEAM` and your own bundle ID in `project.yml` (iCloud sync needs a paid Apple Developer Program team), run `xcodegen` again, then open `Moments.xcodeproj` and run (the camera needs real hardware).
 4. Website: `docs/` is the app's site (plain HTML, no build): a home page with support and the tip link, and `privacy.html`. Replace `support@example.com` and the Ko-fi address, publish the folder (GitHub Pages can serve `docs/` from `main`), then set `RootView.website` to its address to show "About Moments" in the title menu (it opens the site in an in-app Safari view). In App Store Connect, use the site as the support URL and `privacy.html` as the privacy policy URL.
 
+## Tests
+`bundle exec fastlane test` (or `xcodebuild … -scheme Moments test` on a simulator) runs the unit tests in `MomentsTests`.
+
 ## TestFlight
 `bundle exec fastlane beta` (from the repo root, after `bundle install` once: fastlane is pinned in `Gemfile.lock` and installed into `vendor/bundle`) generates the project, builds with the build number one past the latest on TestFlight, and uploads. It signs automatically with an App Store Connect API key, so no Xcode sign-in is needed:
 1. In App Store Connect, create the app record for `it.vincendep.moments` (once).

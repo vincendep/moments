@@ -9,6 +9,12 @@ targets:
     type: application
     platform: iOS
     sources: [Moments]
+    # `xcodebuild test` and `bundle exec fastlane test` run MomentsTests in English, so the
+    # asserted strings ("2 years, 3 months", "Same day") don't depend on the simulator's language.
+    scheme:
+      testTargets: [MomentsTests]
+      language: en
+      region: US
     # iCloud (CloudKit) sync of the SwiftData store. Needs a paid team (DEVELOPMENT_TEAM below)
     # and a bundle ID you own; the container is derived from it.
     entitlements:
@@ -54,3 +60,16 @@ targets:
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Show your moments stored in Photos."
         INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "Save new moments to Photos."
         INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Add where a moment happened to its entry."
+  # Unit tests (Swift Testing) for the models and services, hosted by the app.
+  MomentsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [MomentsTests]
+    dependencies:
+      - target: Moments
+    settings:
+      base:
+        DEVELOPMENT_TEAM: 6L2D8L726C
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: it.vincendep.moments.tests
+        SWIFT_VERSION: "5.0"

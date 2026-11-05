@@ -14,29 +14,8 @@ struct EntriesList: View {
     /// All entries, newest first.
     private var ordered: [Entry] { timeline.sortedEntries }
 
-    /// Consecutive entries grouped by the start of their month, keeping `ordered`'s order.
-    private var grouped: [(Date, [Entry])] {
-        var groups: [(Date, [Entry])] = []
-        for e in ordered {
-            let month = Calendar.current.dateInterval(of: .month, for: e.date)?.start ?? e.date
-            if groups.last?.0 == month { groups[groups.count - 1].1.append(e) } else { groups.append((month, [e])) }
-        }
-        return groups
-    }
-
-    /// One item per day with entries, in display order, pointing at that day's first row.
-    private var scrubberDays: [ScrubberDay] {
-        var days: [ScrubberDay] = []
-        for e in ordered {
-            let day = Calendar.current.startOfDay(for: e.date)
-            if days.last?.date != day {
-                days.append(ScrubberDay(date: day, entryID: e.id, isMilestone: e.isMilestone))
-            } else if e.isMilestone {
-                days[days.count - 1].isMilestone = true
-            }
-        }
-        return days
-    }
+    private var grouped: [(Date, [Entry])] { timeline.entriesByMonth }
+    private var scrubberDays: [ScrubberDay] { timeline.scrubberDays }
 
     var body: some View {
         ScrollViewReader { proxy in

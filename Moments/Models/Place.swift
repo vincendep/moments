@@ -18,7 +18,12 @@ struct Place: Hashable {
     /// "Golden Gate Park, San Francisco": the placemark's name, plus its town when that adds something.
     /// Nil when the placemark has neither.
     static func name(for placemark: CLPlacemark) -> String? {
-        let parts = [placemark.name, placemark.locality].compactMap { $0 }
+        name(placemark.name, locality: placemark.locality)
+    }
+
+    /// The rule behind `name(for:)`: the name, plus the town unless the name already includes it.
+    static func name(_ name: String?, locality: String?) -> String? {
+        let parts = [name, locality].compactMap { $0 }
         guard let first = parts.first else { return nil }
         return parts.count > 1 && !first.contains(parts[1]) ? "\(first), \(parts[1])" : first
     }

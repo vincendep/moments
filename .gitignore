@@ -8,6 +8,7 @@ build/
 # fastlane: local secrets and generated files.
 fastlane/.env
 fastlane/report.xml
+fastlane/test_output/
 fastlane/README.md
 *.p8
 # Bundler installs the gems inside the repo (see .bundle/config).
