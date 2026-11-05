@@ -25,6 +25,9 @@ platform :ios do
     if options[:skip_build]
       UI.user_error!("No build to upload at #{ipa}: run without skip_build first") unless File.exist?(ipa)
     else
+      # The build is tagged with the commit it came from, so it has to be exactly that commit.
+      ensure_git_status_clean
+
       # The Xcode project isn't checked in: generate it from project.yml.
       Dir.chdir("..") { sh("xcodegen") }
 
@@ -49,6 +52,12 @@ platform :ios do
           "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
         ].join(" "),
       )
+
+      # Tag the commit as build/<version>-<build>, e.g. build/1.0-7, read back from the IPA. Tagged
+      # before the upload, so skip_build:true retries a build that already has its tag; force,
+      # because if the upload never happens the next build gets the same number and moves it.
+      version = get_ipa_info_plist_value(ipa: ipa, key: "CFBundleShortVersionString")
+      add_git_tag(tag: "build/#{version}-#{build}", force: true)
     end
 
     upload_to_testflight(

@@ -21,7 +21,7 @@ A private iOS timeline manager: keep any number of timelines of photos, videos, 
    ASC_ISSUER_ID=00000000-0000-0000-0000-000000000000
    ASC_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_ABC123DEFG.p8
    ```
-Optionally pass the testers' notes: `CHANGELOG="New tabs" bundle exec fastlane beta` (then it waits for processing to set them). The version shown to testers is `MARKETING_VERSION` in `project.yml`. If the build succeeded but the upload failed, `bundle exec fastlane beta skip_build:true` uploads `build/Moments.ipa` again without rebuilding.
+Optionally pass the testers' notes: `CHANGELOG="New tabs" bundle exec fastlane beta` (then it waits for processing to set them). The version shown to testers is `MARKETING_VERSION` in `project.yml`. If the build succeeded but the upload failed, `bundle exec fastlane beta skip_build:true` uploads `build/Moments.ipa` again without rebuilding. Builds need a clean working tree: each one tags its commit as `build/<version>-<build>` (e.g. `build/1.0-7`), locally; push them with `git push --tags`. When a build ships to the App Store, tag the same commit `v<version>` by hand.
 
 ## Design
 - Timelines, entries and voice memos sync through the user's private iCloud (SwiftData + CloudKit), so changing phone loses nothing. No account needed.
