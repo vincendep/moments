@@ -287,6 +287,7 @@ private struct PrintPage<Actions: View>: View {
     /// Flipped on appear to flicker the date stamp on, like an old LCD.
     @State private var stampFlicker = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.photosAccess) private var photosAccess
 
     var body: some View {
         Group {
@@ -305,7 +306,7 @@ private struct PrintPage<Actions: View>: View {
                 }
             }
         }
-        .task(id: item.uuid) { await load() }
+        .task(id: PhotoLoad(item: item.uuid, access: photosAccess)) { await load() }
         .onDisappear { player?.pause() }
     }
 
@@ -345,7 +346,7 @@ private struct PrintPage<Actions: View>: View {
     }
 
     private func load() async {
-        guard let id = PhotoService.localID(for: item) else { return }
+        guard let id = await PhotoService.localID(for: item) else { return }
         switch item.kind {
         case .video:
             if let playerItem = await PhotoService.playerItem(id) { player = AVPlayer(playerItem: playerItem) }

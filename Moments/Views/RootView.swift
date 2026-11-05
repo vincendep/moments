@@ -24,6 +24,8 @@ struct RootView: View {
     /// The timeline whose settings sheet is open (held so deleting it doesn't swap the sheet's content).
     @State private var editing: Timeline?
     @State private var showingAbout = false
+    /// Whether Photos can be read, checked again on becoming active (access may have been granted in Settings).
+    @State private var photosAccess = PhotoService.hasAccess
 
     /// The last used timeline, falling back to the first one (e.g. after it was deleted).
     private var current: Timeline? {
@@ -86,10 +88,21 @@ struct RootView: View {
         }
         .onChange(of: timelines.count) { removeRedundantDefaultTimeline() }
         // Entries that arrive from iCloud in the old single-media form are moved over as well.
-        .onChange(of: scenePhase) { _, phase in if phase == .active { MediaMigration.run(in: ctx) } }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            MediaMigration.run(in: ctx)
+            // Assets that couldn't be found are looked for again: access may have been granted
+            // meanwhile, or photos arrived through iCloud.
+            Task {
+                await PhotoService.forgetLookups()
+                photosAccess = PhotoService.hasAccess
+            }
+        }
+        .environment(\.photosAccess, photosAccess)
         .task {
             MediaMigration.run(in: ctx)
             if await PhotoService.requestAccess() { PhotoService.backfillCloudIDs(in: ctx) }
+            photosAccess = PhotoService.hasAccess
         }
     }
 

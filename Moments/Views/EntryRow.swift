@@ -55,6 +55,7 @@ private struct Thumbnail: View {
     let entry: Entry
     var size: CGSize
     @State private var image: UIImage?
+    @Environment(\.photosAccess) private var photosAccess
 
     var body: some View {
         Color.tab
@@ -66,8 +67,8 @@ private struct Thumbnail: View {
                 }
             }
             .clipped()
-            .task(id: entry.cover?.uuid) {
-                if let item = entry.cover, let id = PhotoService.localID(for: item) {
+            .task(id: PhotoLoad(item: entry.cover?.uuid, access: photosAccess)) {
+                if let item = entry.cover, let id = await PhotoService.localID(for: item) {
                     image = await PhotoService.image(id, size: size)
                 }
             }

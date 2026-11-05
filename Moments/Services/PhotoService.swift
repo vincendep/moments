@@ -16,6 +16,12 @@ enum PhotoService {
         return status == .authorized || status == .limited
     }
 
+    /// Full or limited access, without asking. Cheap: it doesn't call the Photos service.
+    static var hasAccess: Bool {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        return status == .authorized || status == .limited
+    }
+
     /// `location` is written to the asset: the system camera picker leaves captures without one.
     static func save(image: UIImage, into album: PHAssetCollection?, location: CLLocation?) async throws -> String {
         try await save(into: album, location: location) { PHAssetChangeRequest.creationRequestForAsset(from: image) }
@@ -101,19 +107,19 @@ enum PhotoService {
         try? ctx.save()
     }
 
-    @MainActor private static var resolvedCloudIDs: [String: String] = [:]
+    private static let lookup = AssetLookup()
 
     /// This device's ID for the item's asset: the stored one when it was added here, otherwise
-    /// looked up by its iCloud ID. Never written back, since each device has its own.
-    @MainActor static func localID(for item: MediaItem) -> String? {
-        if let id = item.assetLocalID, asset(id) != nil { return id }
-        guard let cloud = item.assetCloudID else { return nil }
-        if let id = resolvedCloudIDs[cloud] { return id }
-        let key = PHCloudIdentifier(stringValue: cloud)
-        guard case .success(let id)? = PHPhotoLibrary.shared().localIdentifierMappings(for: [key])[key] else { return nil }
-        resolvedCloudIDs[cloud] = id
-        return id
+    /// looked up by its iCloud ID. Never written back, since each device has its own. Nil straight
+    /// away without Photos access; otherwise looked up off the main thread and remembered.
+    @MainActor static func localID(for item: MediaItem) async -> String? {
+        guard hasAccess else { return nil }
+        return await lookup.localID(stored: item.assetLocalID, cloud: item.assetCloudID)
     }
+
+    /// Drops the remembered lookups, so assets that couldn't be found are looked for again
+    /// (access granted in Settings, photos arrived through iCloud).
+    static func forgetLookups() async { await lookup.forget() }
 
     /// The assets picked in a `PhotosPicker`, oldest first.
     static func assets(for items: [PhotosPickerItem]) -> [PHAsset] {
@@ -160,6 +166,31 @@ enum PhotoService {
         return a
     }
 
+    /// Finds assets' local IDs off the main thread (both Photos calls block), remembering the answer,
+    /// found or not: otherwise every print scrolling into view would ask again, which is slowest
+    /// for the assets that can't be found.
+    private actor AssetLookup {
+        private var found: [String: String?] = [:]
+
+        func localID(stored: String?, cloud: String?) -> String? {
+            let key = "\(stored ?? "")|\(cloud ?? "")"
+            if let known = found[key] { return known }
+            let id = resolve(stored: stored, cloud: cloud)
+            found[key] = id
+            return id
+        }
+
+        func forget() { found = [:] }
+
+        private func resolve(stored: String?, cloud: String?) -> String? {
+            if let stored, PhotoService.asset(stored) != nil { return stored }
+            guard let cloud else { return nil }
+            let key = PHCloudIdentifier(stringValue: cloud)
+            guard case .success(let id)? = PHPhotoLibrary.shared().localIdentifierMappings(for: [key])[key] else { return nil }
+            return id
+        }
+    }
+
     private static func collection(_ id: String) -> PHAssetCollection? {
         PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [id], options: nil).firstObject
     }
@@ -192,4 +223,15 @@ enum PhotoService {
             }
         }
     }
+}
+
+extension EnvironmentValues {
+    /// Whether Photos can be read; prints load again when it changes (access granted in Settings).
+    @Entry var photosAccess = PhotoService.hasAccess
+}
+
+/// What a print's photo is loaded for: the item, and loaded again once Photos access changes.
+struct PhotoLoad: Equatable {
+    var item: UUID?
+    var access: Bool
 }
