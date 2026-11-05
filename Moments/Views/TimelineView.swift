@@ -18,6 +18,10 @@ struct TimelineView: View {
     @State private var milestonesOnly = false
     /// The Milestones list is created on its first visit, so its thread draws in when first seen.
     @State private var milestonesVisited = false
+    /// Access that's off, explained with a way to Settings.
+    @State private var missing: Access?
+    /// The camera couldn't save its capture: explained once its sheet has gone.
+    @State private var captureFailed = false
 
     enum Sheet: Identifiable { case add, camera, note, voice; var id: Self { self } }
 
@@ -64,7 +68,8 @@ struct TimelineView: View {
             Button("Add as Separate Moments") { importItems(pickerItems, together: false) }
             Button("Cancel", role: .cancel) { pickerItems = [] }
         }
-        .sheet(item: $sheet, onDismiss: openPicked) { s in
+        .accessAlert($missing)
+        .sheet(item: $sheet, onDismiss: sheetDismissed) { s in
             switch s {
             case .add:
                 AddMomentSheet { choice in
@@ -72,7 +77,7 @@ struct TimelineView: View {
                     sheet = nil
                 }
             case .camera:
-                CameraView(timeline: timeline) { kind, id, location in
+                CameraView(timeline: timeline, onFailed: { captureFailed = true }) { kind, id, location in
                     let entry = Entry(timeline: timeline, media: [MediaItem(kind, assetLocalID: id)])
                     Arrival.mark(entry)
                     ctx.insert(entry)
@@ -127,18 +132,33 @@ struct TimelineView: View {
     /// Opens a capture straight from the dock. Capture sheets ask for location access first
     /// (once); library imports use the photo's own place, so they don't.
     private func add(_ choice: AddMomentSheet.Choice) {
-        guard choice != .library else { showPicker = true; return }
         Task {
-            await LocationService.requestAccess()
+            if choice != .library { await LocationService.requestAccess() }
             picked = choice
-            openPicked()
+            await openPicked()
         }
     }
 
-    /// Opens what the add sheet picked, once it has gone (a sheet can't open over a dismissing one).
-    private func openPicked() {
+    private func sheetDismissed() {
+        if captureFailed {
+            captureFailed = false
+            missing = .photos
+        }
+        Task { await openPicked() }
+    }
+
+    /// Opens what the add sheet picked, once it has gone (a sheet can't open over a dismissing one),
+    /// after checking the access it needs: without it, explains instead.
+    private func openPicked() async {
         guard let choice = picked else { return }
         picked = nil
+        let needed: [Access] = switch choice {
+        case .camera: [.camera, .photos]
+        case .library: [.photos]
+        case .voice: [.microphone]
+        case .note: []
+        }
+        if let off = await Access.request(needed) { missing = off; return }
         switch choice {
         case .camera: sheet = .camera
         case .library: showPicker = true
@@ -153,6 +173,8 @@ struct TimelineView: View {
     private func importItems(_ items: [PhotosPickerItem], together: Bool) {
         let assets = PhotoService.assets(for: items)
         pickerItems = []
+        // With limited access, items that weren't shared with the app can't be found.
+        if assets.count < items.count { missing = .unsharedPhotos }
         guard !assets.isEmpty else { return }
         var located: [(Entry, CLLocation)] = []
         let groups = together ? [assets] : assets.map { [$0] }

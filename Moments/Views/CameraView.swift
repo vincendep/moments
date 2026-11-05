@@ -4,9 +4,11 @@ import UIKit
 import UniformTypeIdentifiers
 
 /// System camera for photos and videos; saves to Photos and returns the asset ID, with the
-/// current location when location access was given (also written to the asset).
+/// current location when location access was given (also written to the asset). `onFailed` reports a
+/// capture that couldn't be saved (Photos access taken away meanwhile), rather than losing it silently.
 struct CameraView: UIViewControllerRepresentable {
     let timeline: Timeline
+    var onFailed: () -> Void = {}
     var onSaved: (MediaKind, String, CLLocation?) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -38,6 +40,8 @@ struct CameraView: UIViewControllerRepresentable {
                     parent.onSaved(.video, id, location)
                 } else if let image, let id = try? await PhotoService.save(image: image, into: album, location: location) {
                     parent.onSaved(.photo, id, location)
+                } else {
+                    parent.onFailed()
                 }
                 parent.dismiss()
             }

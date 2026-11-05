@@ -16,6 +16,10 @@ struct EntryDetailView: View {
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var memoToRemove: MediaItem?
     @State private var confirmDelete = false
+    /// Access that's off, explained with a way to Settings.
+    @State private var missing: Access?
+    /// The camera couldn't save its capture: explained once its sheet has gone.
+    @State private var captureFailed = false
     /// The tallest print seen on the pages, so they fit it without empty bands.
     @State private var pageHeight: CGFloat = 0
     /// The title field is out of sight, so the bar shows the title instead.
@@ -75,11 +79,14 @@ struct EntryDetailView: View {
         } message: { _ in
             Text("This can't be undone.")
         }
-        .sheet(item: $adding) { kind in
+        .accessAlert($missing)
+        .sheet(item: $adding, onDismiss: {
+            if captureFailed { captureFailed = false; missing = .photos }
+        }) { kind in
             switch kind {
             case .camera:
                 if let timeline = entry.timeline {
-                    CameraView(timeline: timeline) { kind, id, _ in
+                    CameraView(timeline: timeline, onFailed: { captureFailed = true }) { kind, id, _ in
                         entry.add(MediaItem(kind, assetLocalID: id))
                     }
                     .ignoresSafeArea()
@@ -189,9 +196,9 @@ struct EntryDetailView: View {
     private var actionsMenu: some View {
         Menu {
             Section("Add to This Moment") {
-                Button { adding = .camera } label: { Label { Text("Camera") } icon: { Image("icon.camera") } }
-                Button { showPicker = true } label: { Label { Text("From Library") } icon: { Image("icon.library") } }
-                Button { adding = .voice } label: { Label { Text("Voice Memo") } icon: { Image("icon.voice") } }
+                Button { open(.camera) } label: { Label { Text("Camera") } icon: { Image("icon.camera") } }
+                Button { open(nil) } label: { Label { Text("From Library") } icon: { Image("icon.library") } }
+                Button { open(.voice) } label: { Label { Text("Voice Memo") } icon: { Image("icon.voice") } }
             }
             Button(role: .destructive) { confirmDelete = true } label: {
                 Label { Text("Delete Entry") } icon: { Image("icon.delete") }
@@ -233,11 +240,26 @@ struct EntryDetailView: View {
         }
     }
 
+    /// Opens a capture sheet, or the library picker for nil, once the access it needs is given.
+    private func open(_ kind: Adding?) {
+        let needed: [Access] = switch kind {
+        case .camera: [.camera, .photos]
+        case .voice: [.microphone]
+        case nil: [.photos]
+        }
+        Task {
+            if let off = await Access.request(needed) { missing = off; return }
+            if let kind { adding = kind } else { showPicker = true }
+        }
+    }
+
     /// Links the picked assets (oldest first), also adding them to the album when the timeline's settings ask.
     private func addFromLibrary(_ items: [PhotosPickerItem]) {
         guard !items.isEmpty else { return }
         let assets = PhotoService.assets(for: items)
         pickerItems = []
+        // With limited access, items that weren't shared with the app can't be found.
+        if assets.count < items.count { missing = .unsharedPhotos }
         for asset in assets { entry.add(PhotoService.item(for: asset)) }
         if let timeline = entry.timeline { PhotoService.addImports(assets, for: timeline) }
     }

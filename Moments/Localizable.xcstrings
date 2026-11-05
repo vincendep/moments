@@ -200,6 +200,17 @@
         }
       }
     },
+    "Camera Access Is Off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso alla fotocamera disattivato"
+          }
+        }
+      }
+    },
     "Cancel" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -533,6 +544,17 @@
         }
       }
     },
+    "Microphone Access Is Off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso al microfono disattivato"
+          }
+        }
+      }
+    },
     "Milestone" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -562,6 +584,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Moments %@ (%@)"
+          }
+        }
+      }
+    },
+    "Moments can only see the photos and videos you’ve shared with it. To add any of them, allow full access to Photos in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moments vede solo le foto e i video che hai condiviso con l’app. Per aggiungerne altri, consenti l’accesso completo a Foto in Impostazioni."
+          }
+        }
+      }
+    },
+    "Moments keeps your photos and videos in Photos. To add them, allow access to Photos in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moments conserva foto e video nell’app Foto. Per aggiungerli, consenti l’accesso a Foto in Impostazioni."
           }
         }
       }
@@ -687,6 +731,17 @@
         }
       }
     },
+    "Open Settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Impostazioni"
+          }
+        }
+      }
+    },
     "Options" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -694,6 +749,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Opzioni"
+          }
+        }
+      }
+    },
+    "Photos Access Is Off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso a Foto disattivato"
           }
         }
       }
@@ -864,6 +930,17 @@
         }
       }
     },
+    "Some Items Weren’t Added" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alcuni elementi non sono stati aggiunti"
+          }
+        }
+      }
+    },
     "Start" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -981,6 +1058,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impostazioni timeline"
+          }
+        }
+      }
+    },
+    "To record voice memos, allow Moments to use the microphone in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per registrare memo vocali, consenti a Moments di usare il microfono in Impostazioni."
+          }
+        }
+      }
+    },
+    "To take photos and videos, allow Moments to use the camera in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per scattare foto e video, consenti a Moments di usare la fotocamera in Impostazioni."
           }
         }
       }

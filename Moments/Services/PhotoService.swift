@@ -10,8 +10,10 @@ import UIKit
 enum PhotoService {
     static let sharedAlbumName = "Moments"
 
+    /// True with full or limited access; limited still saves new captures (they join the selection).
     static func requestAccess() async -> Bool {
-        await PHPhotoLibrary.requestAuthorization(for: .readWrite) == .authorized
+        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        return status == .authorized || status == .limited
     }
 
     /// `location` is written to the asset: the system camera picker leaves captures without one.
