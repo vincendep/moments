@@ -11,6 +11,9 @@ struct VoiceRecorderView: View {
     @State private var recording: Data?
     @State private var startedAt: Date?
     @State private var length: TimeInterval = 0
+    /// The part to keep, cut on save; nil while there's nothing to trim.
+    @State private var trim: ClosedRange<TimeInterval>?
+    @State private var saving = false
     @State private var title = ""
     @State private var date = Date.now
     @State private var hasTime = true
@@ -34,24 +37,13 @@ struct VoiceRecorderView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         if audio.isRecording { _ = audio.stop() }
+                        audio.stopPlaying()
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        guard let recording else { return }
-                        if let adding {
-                            adding.add(MediaItem(audio: recording))
-                            dismiss()
-                            return
-                        }
-                        let entry = Entry(timeline: timeline, date: date, hasTime: hasTime, title: title,
-                                          media: [MediaItem(audio: recording)], place: place)
-                        Arrival.mark(entry)
-                        ctx.insert(entry)
-                        dismiss()
-                    }
-                    .disabled(recording == nil || audio.isRecording)
+                    Button("Save") { Task { await save() } }
+                        .disabled(recording == nil || audio.isRecording || saving)
                 }
             }
         }
@@ -74,15 +66,25 @@ struct VoiceRecorderView: View {
             .accessibilityLabel(audio.isRecording ? "Stop Recording" : recording == nil ? "Record" : "Record Again")
             // The app's own TimelineView shadows SwiftUI's.
             SwiftUI.TimelineView(.periodic(from: .now, by: 0.5)) { context in
-                Text(Duration.seconds(startedAt.map { context.date.timeIntervalSince($0) } ?? length),
+                Text(Duration.seconds(startedAt.map { context.date.timeIntervalSince($0) } ?? kept),
                      format: .time(pattern: .minuteSecond))
                     .font(.timer)
             }
             if audio.isRecording {
                 Text("Recording").font(.footnote).foregroundStyle(.secondary)
             } else if let recording {
+                if let trim {
+                    SwiftUI.TimelineView(.animation(paused: !audio.isPlaying)) { _ in
+                        AudioTrimmer(data: recording, duration: length,
+                                     range: Binding { trim } set: { self.trim = $0 },
+                                     playhead: audio.isPlaying ? audio.currentTime : nil)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .onChange(of: trim) { audio.stopPlaying() }
+                }
                 Button(audio.isPlaying ? "Stop" : "Play Back") {
-                    audio.isPlaying ? audio.stopPlaying() : audio.play(recording)
+                    audio.isPlaying ? audio.stopPlaying() : audio.play(recording, range: trim)
                 }
                 .buttonStyle(.borderless)
             } else if denied {
@@ -93,6 +95,29 @@ struct VoiceRecorderView: View {
                 Text("Tap to record").font(.footnote).foregroundStyle(.secondary)
             }
         }
+    }
+
+    /// How long the memo will be once trimmed.
+    private var kept: TimeInterval { trim.map { $0.upperBound - $0.lowerBound } ?? length }
+
+    /// Cuts the recording to the trimmed part (keeping it whole if that fails) and saves it.
+    private func save() async {
+        guard var data = recording else { return }
+        saving = true
+        audio.stopPlaying()
+        if let trim, trim.lowerBound > 0.05 || trim.upperBound < length - 0.05,
+           let cut = await AudioService.trim(data, to: trim) {
+            data = cut
+        }
+        if let adding {
+            adding.add(MediaItem(audio: data))
+        } else {
+            let entry = Entry(timeline: timeline, date: date, hasTime: hasTime, title: title,
+                              media: [MediaItem(audio: data)], place: place)
+            Arrival.mark(entry)
+            ctx.insert(entry)
+        }
+        dismiss()
     }
 
     /// Fills in the current location, unless one was picked meanwhile.
@@ -106,10 +131,14 @@ struct VoiceRecorderView: View {
         Task {
             if audio.isRecording {
                 recording = audio.stop()
-                length = startedAt.map { Date.now.timeIntervalSince($0) } ?? 0
+                let measured = recording.map(AudioService.duration(of:)) ?? 0
+                length = measured > 0 ? measured : startedAt.map { Date.now.timeIntervalSince($0) } ?? 0
                 startedAt = nil
+                // Too short to be worth trimming.
+                trim = length >= 2 * AudioTrimmer.minimum ? 0...length : nil
             } else {
                 audio.stopPlaying()
+                trim = nil
                 denied = !(await audio.start())
                 if !denied {
                     startedAt = .now
