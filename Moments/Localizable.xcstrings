@@ -311,6 +311,28 @@
         }
       }
     },
+    "End" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine"
+          }
+        }
+      }
+    },
+    "Drag the ends to trim" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trascina i bordi per tagliare"
+          }
+        }
+      }
+    },
     "Finding Location…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -937,6 +959,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alcuni elementi non sono stati aggiunti"
+          }
+        }
+      }
+    },
+    "Start" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inizio"
           }
         }
       }
